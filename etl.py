@@ -1,5 +1,6 @@
 import os
 import time
+import random
 import logging
 import numpy as np
 import pandas as pd
@@ -168,7 +169,8 @@ if __name__ == "__main__":
 
     DBNAME = "db/hems-all.sqlite"
     # all:
-    icaos = geo_df.index
+    icaos = list(geo_df.index)
+    random.Random(7).shuffle(icaos)
     # FH10:
     #icaos = ['EFHK', 'EFTP', 'EFTU', 'ILZS', 'ILIK', 'ILZL', 'ILZZ', 'ILZV', 'ILZW']
     # FH50:
@@ -185,9 +187,10 @@ if __name__ == "__main__":
             time.sleep(1)
 
     con = sqlite3.connect(DBNAME)
-    if task_id is None or task_id == 0:
-        with con:
-            con.execute('PRAGMA journal_mode=WAL')
+
+#    if task_id is None or task_id == 0:
+#        with con:
+#            con.execute('PRAGMA journal_mode=WAL')
 
     for icao in icaos:
         logging.info(f"Processing {icao}")
@@ -212,5 +215,11 @@ if __name__ == "__main__":
                 except sqlite3.OperationalError as e:
                     logging.error(f"{str(e)} - {icao} TAF")
                     time.sleep(2)
+
+# CREATE INDEX icao_metar ON metar (icao);
+# CREATE INDEX icao_time_metar ON metar (icao, time);
+#
+# CREATE INDEX icao_taf ON taf (icao);
+# CREATE INDEX icao_time_taf ON taf (icao, time);
 
     con.close()
