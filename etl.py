@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 import numpy as np
 import pandas as pd
@@ -187,15 +188,21 @@ if __name__ == "__main__":
         metar, taf = load_station(icao)
         if metar is not None:
             logging.info(f"Inserting {icao} METAR to DB...")
-            try:
-                metar.to_sql('metar', con, if_exists='append', index=False)
-            except sqlite3.OperationalError as e:
-                logging.error(f"{str(e)} - {icao} METAR")
+            while True:
+                try:
+                    metar.to_sql('metar', con, if_exists='append', index=False)
+                    break
+                except sqlite3.OperationalError as e:
+                    logging.error(f"{str(e)} - {icao} METAR")
+                    time.sleep(2)
         if taf is not None:
             logging.info(f"Inserting {icao} TAF to DB...")
-            try:
-                taf.to_sql('taf', con, if_exists='append', index=False)
-            except sqlite3.OperationalError as e:
-                logging.error(f"{str(e)} - {icao} TAF")
+            while True:
+                try:
+                    taf.to_sql('taf', con, if_exists='append', index=False)
+                    break
+                except sqlite3.OperationalError as e:
+                    logging.error(f"{str(e)} - {icao} TAF")
+                    time.sleep(2)
 
     con.close()
