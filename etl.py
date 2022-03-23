@@ -185,7 +185,9 @@ if __name__ == "__main__":
             time.sleep(1)
 
     con = sqlite3.connect(DBNAME)
-    con.execute('PRAGMA journal_mode=WAL')
+    if task_id is None or task_id == 0:
+        with con:
+            con.execute('PRAGMA journal_mode=WAL')
 
     for icao in icaos:
         logging.info(f"Processing {icao}")
