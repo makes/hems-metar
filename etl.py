@@ -152,23 +152,34 @@ def load_station(icao):
         taf = transform_taf(taf)
     return metar, taf
 
+def chunks(l, n):
+    n = max(1, n)
+    return (l[i:i+n] for i in range(0, len(l), n))
+
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
+
+    task_id = os.getenv("SLURM_ARRAY_TASK_ID")
+    task_id = int(task_id) if task_id is not None else None
 
     sect_df = pd.read_csv('data/FH-base_sektorit.csv', sep=',', index_col='Sector_no')
     geo_df = pd.read_csv('data/Saahavaintoasemat.csv', sep=',', index_col='ICAO')
 
-    DBNAME = "db/hems-fh50.sqlite"
+    DBNAME = "db/hems-all.sqlite"
     # all:
-    #icaos = geo_df.index
+    icaos = geo_df.index
     # FH10:
     #icaos = ['EFHK', 'EFTP', 'EFTU', 'ILZS', 'ILIK', 'ILZL', 'ILZZ', 'ILZV', 'ILZW']
     # FH50:
-    icaos = ['EFOU', 'EFRO', 'EFKU', 'ILYL', 'ILQP', 'ILQH', 'ILQJ', 'ILRU', 'ILPU', 'ILQY', 'ILXW']
+    #icaos = ['EFOU', 'EFRO', 'EFKU', 'ILYL', 'ILQP', 'ILQH', 'ILQJ', 'ILRU', 'ILPU', 'ILQY', 'ILXW']
 
-    if os.path.exists(DBNAME):
-        os.remove(DBNAME)
-    con = sqlite3.connect(DBNAME)
+    if task_id is not None:
+        icaos = list(chunks(icaos, 10))[task_id]
+
+    if task_id is None or task_id == 0:
+        if os.path.exists(DBNAME):
+            os.remove(DBNAME)
+        con = sqlite3.connect(DBNAME)
 
     for icao in icaos:
         logging.info(f"Processing {icao}")
