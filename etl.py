@@ -182,6 +182,7 @@ if __name__ == "__main__":
             os.remove(DBNAME)
 
     con = sqlite3.connect(DBNAME)
+    con.execute('PRAGMA journal_mode=WAL')
 
     for icao in icaos:
         logging.info(f"Processing {icao}")
