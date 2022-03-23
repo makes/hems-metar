@@ -180,6 +180,9 @@ if __name__ == "__main__":
     if task_id is None or task_id == 0:
         if os.path.exists(DBNAME):
             os.remove(DBNAME)
+    elif task_id is not None and task_id > 0:
+        while not os.path.exists(DBNAME):
+            time.sleep(1)
 
     con = sqlite3.connect(DBNAME)
     con.execute('PRAGMA journal_mode=WAL')
