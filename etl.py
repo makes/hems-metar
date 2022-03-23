@@ -187,9 +187,15 @@ if __name__ == "__main__":
         metar, taf = load_station(icao)
         if metar is not None:
             logging.info(f"Inserting {icao} METAR to DB...")
-            metar.to_sql('metar', con, if_exists='append', index=False)
+            try:
+                metar.to_sql('metar', con, if_exists='append', index=False)
+            except sqlite3.OperationalError as e:
+                logging.error(f"{str(e)} - {icao} METAR")
         if taf is not None:
             logging.info(f"Inserting {icao} TAF to DB...")
-            taf.to_sql('taf', con, if_exists='append', index=False)
+            try:
+                taf.to_sql('taf', con, if_exists='append', index=False)
+            except sqlite3.OperationalError as e:
+                logging.error(f"{str(e)} - {icao} TAF")
 
     con.close()
