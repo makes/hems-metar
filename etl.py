@@ -191,7 +191,8 @@ if __name__ == "__main__":
             logging.info(f"Inserting {icao} METAR to DB...")
             while True:
                 try:
-                    metar.to_sql('metar', con, if_exists='append', index=False)
+                    with con:
+                        metar.to_sql('metar', con, if_exists='append', index=False)
                     break
                 except sqlite3.OperationalError as e:
                     logging.error(f"{str(e)} - {icao} METAR")
@@ -200,7 +201,8 @@ if __name__ == "__main__":
             logging.info(f"Inserting {icao} TAF to DB...")
             while True:
                 try:
-                    taf.to_sql('taf', con, if_exists='append', index=False)
+                    with con:
+                        taf.to_sql('taf', con, if_exists='append', index=False)
                     break
                 except sqlite3.OperationalError as e:
                     logging.error(f"{str(e)} - {icao} TAF")
