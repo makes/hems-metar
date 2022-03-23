@@ -179,7 +179,8 @@ if __name__ == "__main__":
     if task_id is None or task_id == 0:
         if os.path.exists(DBNAME):
             os.remove(DBNAME)
-        con = sqlite3.connect(DBNAME)
+
+    con = sqlite3.connect(DBNAME)
 
     for icao in icaos:
         logging.info(f"Processing {icao}")
