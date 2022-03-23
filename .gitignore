@@ -2,6 +2,9 @@ data/*
 doc/*
 output/*
 sample-data/
+db/*
+
+*.sqlite
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
