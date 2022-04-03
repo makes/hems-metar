@@ -144,6 +144,15 @@ def assign_labels(vfr_table, classlabels):
             sector_df = df[df['sector'] == sector]
             sector_df.to_excel(writer, sector, index=False, freeze_panes=(1, 0))
 
+def pivot_csv(vfr_df, outfile):
+    vfr_df = vfr_df[['sector', 'month', 'hour', 'VFR_OK']].copy()
+    vfr_df['month'] = vfr_df['month'].astype(str).str.zfill(2)
+    vfr_df['hour'] = vfr_df['hour'].astype(str).str.zfill(2)
+    vfr_df['t'] = vfr_df['month'].str.cat(vfr_df['hour'].astype(str), sep='_')
+    vfr_df = vfr_df[['sector', 't', 'VFR_OK']]
+    df = vfr_df.pivot(index=['sector'], columns=['t'], values='VFR_OK')
+    df.to_csv(outfile, index=True)
+
 if __name__ == "__main__":
     import sys
     import argparse
@@ -153,11 +162,11 @@ if __name__ == "__main__":
             self.print_help()
             sys.exit(2)
     parser = Parser(description='VFR classification')
-    parser.add_argument('action', type=str, nargs=1, help='createviews | getcombinations | listcriteria | assignlabels')
+    parser.add_argument('action', type=str, nargs=1, help='createviews | getcombinations | listcriteria | assignlabels | pivotcsv')
     #parser.add_argument('--outputdir', type=str, default='plots', help='output directory')
     args = parser.parse_args()
 
-    if args.action[0] not in ['createviews', 'getcombinations', 'listcriteria', 'assignlabels']:
+    if args.action[0] not in ['createviews', 'getcombinations', 'listcriteria', 'assignlabels', 'pivotcsv']:
         print('Invalid action')
         exit()
 
@@ -177,4 +186,9 @@ if __name__ == "__main__":
         vfr_table = pd.read_csv('output/vfr-nolabels.csv')
         classlabels = pd.read_excel('data/hems-classlabels.xlsx', sheet_name='VFR0')
         assign_labels(vfr_table, classlabels)
+        exit()
+
+    if args.action[0] == 'pivotcsv':
+        vfr_df = pd.read_csv('output/vfr-labels.csv')
+        pivot_csv(vfr_df, 'output/vfr-proba-only.csv')
         exit()
