@@ -49,16 +49,8 @@ def create_sector_views(dbfile, vfr_wx):
                 metar.time_of_day as time_of_day
             FROM metar
             """
-            sql += f"WHERE icao = '{icao}'\n"
-        sql += f') GROUP BY time HAVING count = {len(icaos)}\n'
-        sql += """
-        and time_of_day IS NOT NULL
-        and vfr_3000 IS NOT NULL
-        and vfr_2000 IS NOT NULL
-        and vfr_500 IS NOT NULL
-        and vfr_night IS NOT NULL
-        and vfr_night_few_cloud IS NOT NULL;
-        """
+            sql += f"WHERE icao = '{icao}' and vis IS NOT NULL and ceil IS NOT NULL and base IS NOT NULL\n"
+        sql += f') GROUP BY time HAVING count = {len(icaos)};'
 
         cur.execute(sql)
 
