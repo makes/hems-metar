@@ -16,8 +16,8 @@ def load_twilight_data(filename):
 twil_data = load_twilight_data('twilight.csv')
 
 TIME_DAY = 0
-TIME_NIGHT = 1
-TIME_SUNSET = 2
+TIME_SUNSET = 1
+TIME_NIGHT = 2
 
 def get_time_of_day(timestamp: str, icao: str):
     """
