@@ -25,13 +25,11 @@ def create_sector_views(dbfile, vfr_wx):
         sql += """
         SELECT time, substr(time, 6, 2) as month, substr(time, 12, 2) as hour,
                COUNT() as count,
-               MIN(vis) as min_vis, MIN(ceil) as min_ceil, MIN(base) as min_base,
                MAX(time_of_day) as time_of_day,
-               (MIN(vis) >= 3000 and MIN(ceil) >= 300 and time_of_day = 0) as vfr_3000,
-               (MIN(vis) >= 2000 and MIN(ceil) >= 400 and time_of_day = 0) as vfr_2000,
-               (MIN(vis) >= 500 and MIN(ceil) >= 500 and time_of_day = 0) as vfr_500,
-               (MIN(vis) >= 3000 and MIN(base) >= 1200 and time_of_day != 0) as vfr_night,
-               (MIN(vis) >= 3000 and MIN(ceil) >= 1200 and MIN(base) < 1200 and time_of_day != 0) as vfr_night_few_cloud
+               MIN(vfr_3000) as vfr_3000,
+               MIN(vfr_3000 or vfr_2000) as vfr_2000,
+               MIN(vfr_3000 or vfr_2000 or vfr_500) as vfr_500,
+               MIN(vfr_night) as vfr_night, MIN(vfr_night_few_cloud) as vfr_night_few_cloud
         FROM (
         """
         first = True
@@ -41,17 +39,24 @@ def create_sector_views(dbfile, vfr_wx):
             first = False
             sql += """
             SELECT metar.icao AS icao, metar.time as time,
-                metar.vis AS vis, metar.ceil AS ceil, metar.base AS base,
+                metar.vis as vis, metar.ceil as ceil, metar.base as base, metar.time_of_day as time_of_day,
+                (metar.vis >= 3000 and metar.ceil >= 300) as vfr_3000,
+                (metar.vis >= 2000 and metar.ceil >= 400) as vfr_2000,
+                (metar.vis >= 500 and metar.ceil >= 500) as vfr_500,
+                (metar.vis >= 3000 and metar.base >= 1200) as vfr_night,
+                (metar.vis >= 3000 and metar.ceil >= 1200 and metar.base < 1200) as vfr_night_few_cloud,
                 metar.time_of_day as time_of_day
             FROM metar
             """
-            sql += f"WHERE icao = '{icao}' and vis IS NOT NULL and ceil IS NOT NULL and base IS NOT NULL\n"
-        sql += f') GROUP BY time HAVING count = {len(icaos)} and time_of_day IS NOT NULL\n'
+            sql += f"WHERE icao = '{icao}'\n"
+        sql += f') GROUP BY time HAVING count = {len(icaos)}\n'
         sql += """
+        and time_of_day IS NOT NULL
         and vfr_3000 IS NOT NULL
         and vfr_2000 IS NOT NULL
         and vfr_500 IS NOT NULL
-        and vfr_night IS NOT NULL;
+        and vfr_night IS NOT NULL
+        and vfr_night_few_cloud IS NOT NULL;
         """
 
         cur.execute(sql)
