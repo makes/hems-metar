@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import sqlite3
 
-dbfile = 'db/hems-all-notafcoud-indexed.sqlite'
+dbfile = 'db/hems-all-notafcloud-indexed.sqlite'
 
 sect_df = pd.read_csv('data/FH-base_sektorit_ver3_28MAR22.csv', sep=';')
 sect_df.set_index('Sector_no', inplace=True, drop=False)
@@ -18,6 +18,7 @@ def create_sector_views(dbfile, vfr_wx):
 
     for sector, icaos in vfr_wx.items():
         view_name = f'[VFR_{sector}]'
+        print(f'Creating view {view_name}')
         sql = f"DROP VIEW IF EXISTS {view_name};\n"
         cur.execute(sql)
 
