@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 from datetime import timedelta
 import pandas as pd
@@ -45,6 +46,18 @@ if __name__ == "__main__":
     geo_df = pd.read_csv('data/Saahavaintoasemat.csv', index_col='ICAO')
 
     icaos = ['EFHK', 'EFTU', 'EFTP', 'EFSI', 'EFOU', 'EFRO', 'EFKU', 'EFUT', 'EFLP', 'EFET']
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'concat':
+            filename = 'output/twil_all.csv'
+            out_df = pd.read_csv(f'output/twil_{icaos[0]}.csv')
+            for icao in icaos[1:]:
+                twil_df = pd.read_csv(f'output/twil_{icao}.csv')
+                out_df = pd.concat([out_df, twil_df])
+            out_df.to_csv(filename, index=False)
+            exit()
+        else:
+            print("Invalid argument. Use 'concat' to concatenate all files.")
 
     task_id = os.getenv("SLURM_ARRAY_TASK_ID")
     task_id = int(task_id) if task_id is not None else None
