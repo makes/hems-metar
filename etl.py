@@ -121,6 +121,7 @@ def transform_metar(metar):
     metar_cols = ['icao', 'time', 'temp', 'vis', 'rvr', 'ceil', 'base', 'time_of_day', 'metar_msg']
     metar_trans = [extract_metar(d) for d in zip(metar.ttime, metar.content)]
     df = pd.DataFrame(metar_trans, columns=metar_cols)
+    df['time_of_day'] = df['time_of_day'].astype(float).astype(int) # patch
     return df
 
 def extract_taf(data: np.ndarray):
