@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import sqlite3
 
-dbfile = 'db/hems-all-notafcloud-indexed.sqlite'
+dbfile = 'db/hems-all.sqlite'
 
 sect_df = pd.read_csv('data/FH-base_sektorit_ver3_28MAR22.csv', sep=';')
 sect_df.set_index('Sector_no', inplace=True, drop=False)

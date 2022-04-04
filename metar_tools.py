@@ -51,8 +51,10 @@ def get_ceil(metar):
     #if len(metar.sky) == 0:
         # no cloud data available - set to 0? -No, this implies CAVOK.
         #metar_ceils.append(0)
+    if 'CAVOK' in metar.code:
+        metar_ceils.append(9999)
     for cloud in metar.sky:
-        if cloud[0] == 'SKC' or cloud[0] == 'CLR' or cloud[0] == 'NSC' or cloud[0] == 'NCD' or cloud[0] == 'FEW' or cloud[0] == 'SCT' or 'CAVOK' in metar.code:
+        if cloud[0] == 'SKC' or cloud[0] == 'CLR' or cloud[0] == 'NSC' or cloud[0] == 'NCD' or cloud[0] == 'FEW' or cloud[0] == 'SCT':
             metar_ceils.append(9999)
         if cloud[0] == 'BKN' or cloud[0] == 'OVC' or cloud[0] == 'VV':
             if cloud[1] is None:
