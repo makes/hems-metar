@@ -83,7 +83,7 @@ def get_combinations(dbfile, vfr_wx):
                  vfr_night, vfr_night_few_cloud, time_of_day;
         """.format(view_name)
         chunk = pd.read_sql(sql, con, coerce_float=False)
-        chunk['time_of_day'] = chunk['time_of_day'].astype(float).astype(int)
+        chunk['time_of_day'] = chunk['time_of_day'].astype(float).astype('Int64')
         if combinations is None:
             combinations = chunk
         else:
@@ -114,7 +114,7 @@ def list_criteria(dbfile, vfr_wx):
         ORDER BY month, hour
         """.format(view_name)
         chunk = pd.read_sql(sql, con, coerce_float=False)
-        chunk['time_of_day'] = chunk['time_of_day'].astype(float).astype(int)
+        chunk['time_of_day'] = chunk['time_of_day'].astype(float).astype('Int64')
         chunk.insert(0, 'sector', sector)
         if table is None:
             table = chunk
