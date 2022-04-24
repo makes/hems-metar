@@ -134,10 +134,12 @@ def extract_taf(data: np.ndarray):
         return (None, time_str, None, taf_str)
     icao = forecast.station
     vis = taf_tools.get_worstcase_vis(forecast, time_str, 3)
-    return (icao, time_str, vis, taf_str)
+    ceil = taf_tools.get_worstcase_ceil(forecast, time_str, 3)
+    base = taf_tools.get_worstcase_base(forecast, time_str, 3, ceil)
+    return (icao, time_str, vis, ceil, base, taf_str)
 
 def transform_taf(taf):
-    taf_cols = ['icao', 'time', 'taf_vis', 'taf_msg']
+    taf_cols = ['icao', 'time', 'taf_vis', 'taf_ceil', 'taf_base', 'taf_msg']
     taf_trans = [extract_taf(d) for d in zip(taf.ttime, taf.content)]
     df = pd.DataFrame(taf_trans, columns=taf_cols)
     return df

@@ -127,20 +127,114 @@ def get_ceil(taf):
     :rtype: int
     """
     heights = []
-    if not taf.clouds and not taf.vertical_visibility:
+    if not taf.clouds and not taf.vertical_visibility and not taf.cavok:
         return None
+    if taf.cavok:
+        heights.append(9999)
     if taf.vertical_visibility:
         heights.append(taf.vertical_visibility)
     if taf.clouds:
         for cloud in taf.clouds:
+            if cloud.quantity.name in ['FEW', 'SCT', 'SKC', 'NSC', 'NCD']:
+                heights.append(9999)
             if cloud.quantity.name in ['BKN', 'OVC']:
                 heights.append(cloud.height)
     if not heights:
         return None
     return min(heights)
 
+def get_base(taf, ceil):
+    """
+    Returns cloud base.
+
+    :param taf: Parsed TAF or TAFTrend.
+    :param ceil: Cloud ceiling used as upper limit.
+    :return: Cloud base.
+    :rtype: int
+    """
+    if ceil is None:
+        heights = []
+    else:
+        heights = [ceil]
+    if taf.clouds:
+        for cloud in taf.clouds:
+            if cloud.quantity.name in ['FEW', 'SCT']:
+                if cloud.height is None:
+                    heights.append(0)
+                else:
+                    heights.append(cloud.height)
+    if not heights:
+        return None
+    return min(heights)
+
 def get_worstcase_ceil(taf, start: str, duration: int):
-    pass
+    """
+    Lowest cloud ceiling during flight.
+
+    :param taf: Parsed TAF or TAFTrend.
+    :param start: Start time of flight in ISO format (UTC).
+    :param duration: Duration of flight in hours.
+    :return: Worst-case cloud ceiling.
+    :rtype: int
+    """
+    start = datetime.fromisoformat(start) # + '+00:00') (use offset-naive datetime for pandas compatibility)
+    taf_ceil = []
+    if validity_during_flight(taf, start, duration) != 2:
+        return None
+    initial_ceil = get_ceil(taf)
+    if initial_ceil is not None:
+        taf_ceil.append(initial_ceil)
+    for trend in taf.trends:
+        ceil = get_ceil(trend)
+        if ceil is None:
+            continue
+        if initial_ceil is None:
+            initial_ceil = 10001
+        deteriorating = ceil < initial_ceil
+        valid = validity_during_flight(trend, start, duration, deteriorating=deteriorating)
+        if valid == 0:
+            continue
+        if valid == 2:
+            taf_ceil = []
+        taf_ceil.append(ceil)
+    if len(taf_ceil) == 0:
+        return None
+    return min(taf_ceil)
+
+def get_worstcase_base(taf, start: str, duration: int, ceil: int):
+    """
+    Lowest cloud base during flight.
+
+    :param taf: Parsed TAF or TAFTrend.
+    :param start: Start time of flight in ISO format (UTC).
+    :param duration: Duration of flight in hours.
+    :param ceil: Cloud ceiling used as upper limit.
+    :return: Worst-case cloud base.
+    :rtype: int
+    """
+    start = datetime.fromisoformat(start) # + '+00:00') (use offset-naive datetime for pandas compatibility)
+    taf_base = []
+    if validity_during_flight(taf, start, duration) != 2:
+        return None
+    initial_base = get_base(taf, ceil)
+    if initial_base is not None:
+        taf_base.append(initial_base)
+    for trend in taf.trends:
+        base = get_base(trend, ceil)
+        if base is None:
+            continue
+        if initial_base is None:
+            initial_base = 10001
+        deteriorating = base < initial_base
+        valid = validity_during_flight(trend, start, duration, deteriorating=deteriorating)
+        if valid == 0:
+            continue
+        if valid == 2:
+            taf_base = []
+        taf_base.append(ceil)
+    if len(taf_base) == 0:
+        return None
+    return min(taf_base)
 
 def get_worstcase_vis(taf, start: str, duration: int):
     """

@@ -2,9 +2,11 @@ import numpy as np
 import pandas as pd
 import sqlite3
 
+from twil_tools import TIME_DAY, TIME_SUNSET, TIME_NIGHT
+
 dbfile = 'db/hems-all.sqlite'
 
-sect_df = pd.read_csv('data/FH-base_sektorit_ver3_28MAR22.csv', sep=';')
+sect_df = pd.read_csv('data/FH_sektorit_0-sken_ver5_06APR22.csv', sep=';')
 sect_df.set_index('Sector_no', inplace=True, drop=False)
 geo_df = pd.read_csv('data/Saahavaintoasemat.csv', sep=',', index_col='ICAO')
 
@@ -50,7 +52,7 @@ def create_sector_views(dbfile, vfr_wx):
             FROM metar
             """
             sql += f"WHERE icao = '{icao}' and vis IS NOT NULL and ceil IS NOT NULL and base IS NOT NULL\n"
-        sql += f') GROUP BY time HAVING count = {len(icaos)};'
+        sql += f') GROUP BY time HAVING count = {len(icaos)} and MAX(time_of_day) IS NOT NULL;'
 
         cur.execute(sql)
 
@@ -82,6 +84,7 @@ def get_combinations(dbfile, vfr_wx):
             combinations = pd.concat([combinations, chunk])
     con.close()
     cols = ['vfr_3000', 'vfr_2000', 'vfr_500', 'vfr_night', 'vfr_night_few_cloud', 'time_of_day']
+    combinations.fillna(-999, inplace=True)
     c = pd.DataFrame(combinations.groupby(cols, as_index=False).sum())
     c[cols] = c[cols].applymap(np.int64)
     c.to_csv('output/vfr-combinations.csv', index=False)
@@ -151,6 +154,75 @@ def pivot_csv(vfr_df, outfile):
     df = vfr_df.pivot(index=['sector'], columns=['t'], values='VFR_OK')
     df.to_csv(outfile, index=True)
 
+def create_validation_views(dbfile, vfr_wx, classlabels):
+    con = sqlite3.connect(dbfile)
+
+    classlabels.to_sql('vfr_classlabels', con, if_exists='replace', index=False)
+
+    cur = con.cursor()
+
+    for sector, icaos in vfr_wx.items():
+        view_name = f'[val_VFR_{sector}]'
+        sect_view_name = f'[VFR_{sector}]'
+        print(f'Creating view {view_name}')
+        sql = f"DROP VIEW IF EXISTS {view_name};\n"
+        cur.execute(sql)
+
+        sql = f"CREATE VIEW {view_name} AS\n"
+        sql += "SELECT DISTINCT sector.time, lab.vfr_label as vfr_label, sector.time_of_day as time_of_day,\n"
+
+        first = True
+        for icao in icaos:
+            if not first:
+                sql += ','
+            first = False
+            sql += f"""
+            metar_{icao}.vis as {icao}_vis, metar_{icao}.ceil as {icao}_ceil, metar_{icao}.base as {icao}_base, metar_{icao}.metar_msg as {icao}_metar
+            """
+        sql += f'FROM {sect_view_name} sector\n'
+        for icao in icaos:
+            sql += f"""
+            INNER JOIN metar metar_{icao}
+            ON sector.time = metar_{icao}.time AND metar_{icao}.icao = '{icao}'
+            """
+        sql += """INNER JOIN vfr_classlabels lab
+            ON sector.vfr_3000 = lab.vfr_3000 AND
+            sector.vfr_2000 = lab.vfr_2000 AND
+            sector.vfr_500 = lab.vfr_500 AND
+            sector.vfr_night = lab.vfr_night AND
+            sector.vfr_night_few_cloud = lab.vfr_night_few_cloud AND
+            sector.time_of_day = lab.time_of_day
+            """
+        cur.execute(sql)
+
+    con.commit()
+    con.close()
+
+def get_random_sample(dbfile, vfr_wx):
+    n_per_sector = 1000
+
+    samples = {}
+    con = sqlite3.connect(dbfile)
+    for i, sector in enumerate(vfr_wx):
+        print(f'Getting {n_per_sector} samples from {sector} ({i+1}/{len(vfr_wx)})')
+        view_name = f'[val_VFR_{sector}]'
+        sql = f'SELECT * FROM {view_name} ORDER BY RANDOM() LIMIT {n_per_sector}'
+        sector_sample = pd.read_sql(sql, con)
+        sector_sample['time_of_day']
+        mask = sector_sample['time_of_day'] == TIME_DAY
+        sector_sample.loc[mask, 'time_of_day'] = 'DAY'
+        mask = sector_sample['time_of_day'] == TIME_SUNSET
+        sector_sample.loc[mask, 'time_of_day'] = 'SUNSET'
+        mask = sector_sample['time_of_day'] == TIME_NIGHT
+        sector_sample.loc[mask, 'time_of_day'] = 'NIGHT'
+        samples[sector] = sector_sample
+    con.close()
+
+    with pd.ExcelWriter('output/vfr-random-sample.xlsx') as writer:
+        for sector, sample in samples.items():
+            print(f'Writing {sector} samples to xlsx...')
+            sample.to_excel(writer, sector, index=False, freeze_panes=(1, 0))
+
 if __name__ == "__main__":
     import sys
     import argparse
@@ -160,11 +232,11 @@ if __name__ == "__main__":
             self.print_help()
             sys.exit(2)
     parser = Parser(description='VFR classification')
-    parser.add_argument('action', type=str, nargs=1, help='createviews | getcombinations | listcriteria | assignlabels | pivotcsv')
+    parser.add_argument('action', type=str, nargs=1, help='createviews | getcombinations | listcriteria | assignlabels | pivotcsv | createvalviews | randomsample')
     #parser.add_argument('--outputdir', type=str, default='plots', help='output directory')
     args = parser.parse_args()
 
-    if args.action[0] not in ['createviews', 'getcombinations', 'listcriteria', 'assignlabels', 'pivotcsv']:
+    if args.action[0] not in ['createviews', 'getcombinations', 'listcriteria', 'assignlabels', 'pivotcsv', 'createvalviews', 'randomsample']:
         print('Invalid action')
         exit()
 
@@ -189,4 +261,13 @@ if __name__ == "__main__":
     if args.action[0] == 'pivotcsv':
         vfr_df = pd.read_csv('output/vfr-labels.csv')
         pivot_csv(vfr_df, 'output/vfr-proba-only.csv')
+        exit()
+
+    if args.action[0] == 'createvalviews':
+        classlabels = pd.read_excel('data/hems-classlabels.xlsx', sheet_name='VFR0')
+        create_validation_views(dbfile, vfr_wx, classlabels)
+        exit()
+
+    if args.action[0] == 'randomsample':
+        get_random_sample(dbfile, vfr_wx)
         exit()
