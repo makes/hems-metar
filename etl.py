@@ -121,7 +121,12 @@ def transform_metar(metar):
     metar_cols = ['icao', 'time', 'temp', 'vis', 'rvr', 'ceil', 'base', 'time_of_day', 'metar_msg']
     metar_trans = [extract_metar(d) for d in zip(metar.ttime, metar.content)]
     df = pd.DataFrame(metar_trans, columns=metar_cols)
-    df['time_of_day'] = df['time_of_day'].astype(float).astype('Int64') # patch
+    df['temp'] = df['temp'].astype(float).astype('Int64')
+    df['vis'] = df['vis'].astype(float).astype('Int64')
+    df['rvr'] = df['rvr'].astype(float).astype('Int64')
+    df['ceil'] = df['ceil'].astype(float).astype('Int64')
+    df['base'] = df['base'].astype(float).astype('Int64')
+    df['time_of_day'] = df['time_of_day'].astype(float).astype('Int64')
     return df
 
 def extract_taf(data: np.ndarray):
@@ -133,15 +138,49 @@ def extract_taf(data: np.ndarray):
         logging.error(f'{str(e)} - {taf_str}')
         return (None, time_str, None, taf_str)
     icao = forecast.station
-    vis = taf_tools.get_worstcase_vis(forecast, time_str, 3)
-    ceil = taf_tools.get_worstcase_ceil(forecast, time_str, 3)
-    base = taf_tools.get_worstcase_base(forecast, time_str, 3, ceil)
-    return (icao, time_str, vis, ceil, base, taf_str)
+    vis0 = taf_tools.get_worstcase_vis(forecast, time_str, 0)
+    vis1 = taf_tools.get_worstcase_vis(forecast, time_str, 1)
+    vis2 = taf_tools.get_worstcase_vis(forecast, time_str, 2)
+    vis3 = taf_tools.get_worstcase_vis(forecast, time_str, 3)
+    vis4 = taf_tools.get_worstcase_vis(forecast, time_str, 4)
+    vis5 = taf_tools.get_worstcase_vis(forecast, time_str, 5)
+    ceil0 = taf_tools.get_worstcase_ceil(forecast, time_str, 0)
+    base0 = taf_tools.get_worstcase_base(forecast, time_str, 0, ceil0)
+    ceil1 = taf_tools.get_worstcase_ceil(forecast, time_str, 1)
+    base1 = taf_tools.get_worstcase_base(forecast, time_str, 1, ceil1)
+    ceil2 = taf_tools.get_worstcase_ceil(forecast, time_str, 2)
+    base2 = taf_tools.get_worstcase_base(forecast, time_str, 2, ceil2)
+    ceil3 = taf_tools.get_worstcase_ceil(forecast, time_str, 3)
+    base3 = taf_tools.get_worstcase_base(forecast, time_str, 3, ceil3)
+    ceil4 = taf_tools.get_worstcase_ceil(forecast, time_str, 4)
+    base4 = taf_tools.get_worstcase_base(forecast, time_str, 4, ceil4)
+    ceil5 = taf_tools.get_worstcase_ceil(forecast, time_str, 5)
+    base5 = taf_tools.get_worstcase_base(forecast, time_str, 5, ceil5)
+    return (icao, time_str,
+            vis0, ceil0, base0,
+            vis1, ceil1, base1,
+            vis2, ceil2, base2,
+            vis3, ceil3, base3,
+            vis4, ceil4, base4,
+            vis5, ceil5, base5,
+            taf_str)
 
 def transform_taf(taf):
-    taf_cols = ['icao', 'time', 'taf_vis', 'taf_ceil', 'taf_base', 'taf_msg']
+    taf_cols = ['icao', 'time',
+                'taf0h_vis', 'taf0h_ceil', 'taf0h_base',
+                'taf1h_vis', 'taf1h_ceil', 'taf1h_base',
+                'taf2h_vis', 'taf2h_ceil', 'taf2h_base',
+                'taf3h_vis', 'taf3h_ceil', 'taf3h_base',
+                'taf4h_vis', 'taf4h_ceil', 'taf4h_base',
+                'taf5h_vis', 'taf5h_ceil', 'taf5h_base',
+                'taf_msg']
     taf_trans = [extract_taf(d) for d in zip(taf.ttime, taf.content)]
     df = pd.DataFrame(taf_trans, columns=taf_cols)
+    for i in range(6):
+        prefix = f'taf{i}h_'
+        df[prefix+'vis'] = df[prefix+'vis'].astype(float).astype('Int64')
+        df[prefix+'ceil'] = df[prefix+'ceil'].astype(float).astype('Int64')
+        df[prefix+'base'] = df[prefix+'base'].astype(float).astype('Int64')
     return df
 
 def load_station(icao):
