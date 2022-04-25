@@ -225,6 +225,7 @@ if __name__ == "__main__":
         if os.path.exists(DBNAME):
             os.remove(DBNAME)
     elif task_id is not None and task_id > 0:
+        time.sleep(1)
         while not os.path.exists(DBNAME):
             time.sleep(1)
 
