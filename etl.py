@@ -136,7 +136,14 @@ def extract_taf(data: np.ndarray):
         forecast = taf_tools.parse(taf_str)
     except (ValueError, IndexError) as e:
         logging.error(f'{str(e)} - {taf_str}')
-        return (None, time_str, None, taf_str)
+        return (None, time_str,
+            None, None, None,
+            None, None, None,
+            None, None, None,
+            None, None, None,
+            None, None, None,
+            None, None, None,
+            taf_str)
     icao = forecast.station
     vis0 = taf_tools.get_worstcase_vis(forecast, time_str, 0)
     vis1 = taf_tools.get_worstcase_vis(forecast, time_str, 1)
