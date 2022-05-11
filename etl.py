@@ -61,7 +61,7 @@ def load_metar(icao_code):
     try:
         i = find_first_file(icao_code, 'METAR')
     except RuntimeError as e:
-        logging.warn(f"{str(e)} - {icao_code}")
+        logging.warning(f"{str(e)} - {icao_code}")
         return None
     metar = load_metar_chunk(icao_code, data_yrs[i])
     for year in data_yrs[i+1:]:
@@ -83,7 +83,7 @@ def load_taf(icao_code):
     try:
         i = find_first_file(icao_code, 'TAF')
     except RuntimeError as e:
-        logging.warn(f"{str(e)} - {icao_code}")
+        logging.warning(f"{str(e)} - {icao_code}")
         return None
     taf = load_taf_chunk(icao_code, data_yrs[i])
     for year in data_yrs[i+1:]:
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     task_id = os.getenv("SLURM_ARRAY_TASK_ID")
     task_id = int(task_id) if task_id is not None else None
 
-    sect_df = pd.read_csv('data/FH-base_sektorit.csv', sep=',', index_col='Sector_no')
+    #sect_df = pd.read_csv('data/FH-base_sektorit.csv', sep=',', index_col='Sector_no')
     geo_df = pd.read_csv('data/Saahavaintoasemat.csv', sep=',', index_col='ICAO')
 
     DBNAME = "db/hems-all.sqlite"

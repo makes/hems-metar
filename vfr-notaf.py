@@ -6,7 +6,7 @@ from twil_tools import TIME_DAY, TIME_SUNSET, TIME_NIGHT
 
 dbfile = 'db/hems-all.sqlite'
 
-sect_df = pd.read_csv('data/FH_sektorit_0-sken_ver5_06APR22.csv', sep=';')
+sect_df = pd.read_csv('data/FH_sektorit_3-sken_ver2.1_ceil_cloud_break_05MAY22.csv', sep=';')
 sect_df.set_index('Sector_no', inplace=True, drop=False)
 geo_df = pd.read_csv('data/Saahavaintoasemat.csv', sep=',', index_col='ICAO')
 
@@ -47,7 +47,7 @@ def create_sector_views(dbfile, vfr_wx):
                 (metar.vis >= 2000 and metar.ceil >= 400) as vfr_2000,
                 (metar.vis >= 500 and metar.ceil >= 500) as vfr_500,
                 (metar.vis >= 3000 and metar.base >= 1200) as vfr_night,
-                (metar.vis >= 3000 and metar.ceil >= 1200 and metar.base < 1200) as vfr_night_few_cloud,
+                (metar.vis >= 3000 and metar.ceil >= 1200 and metar.base < 1200) OR (metar.vis >= 3000 and metar.base >= 1200) as vfr_night_few_cloud,
                 metar.time_of_day as time_of_day
             FROM metar
             """
